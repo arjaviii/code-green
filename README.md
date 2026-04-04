@@ -1,6 +1,8 @@
 # 🌿 Code-Green: Sustainable Computing Auditor
 > *Transforming Carbon-Heavy Algorithms into Eco-Futurist Efficiency.*
 
+![Code-Green Dashboard Preview](assets/dashboard.png)
+
 ---
 
 ## 🧭 Part 0: The Vision & Core Features
