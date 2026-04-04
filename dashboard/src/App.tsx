@@ -19,7 +19,6 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-// Mock data for the chart (CO2 Savings over time)
 const chartData = [
   { name: 'Mon', savings: 12 },
   { name: 'Tue', savings: 15 },
@@ -32,18 +31,37 @@ const chartData = [
 
 function App() {
   const [report, setReport] = useState({
-    projectName: 'code-green',
-    score: 88,
-    vampiresDetected: 14,
-    potentialSavings: 38,
-    languages: ['Java', 'Python', 'C++'],
-    rulesFired: [
-      { id: 'java-linked-list', description: 'LinkedList used instead of ArrayList', count: 3, saving: 15 },
-      { id: 'python-append-loop', description: 'Using .append() in a loop', count: 6, saving: 20 },
-      { id: 'cpp-pass-by-value', description: 'Large object passed by value', count: 2, saving: 12 },
-      { id: 'python-redundant-api', description: 'Frequent polling detected', count: 1, saving: 30 },
-    ]
+    projectName: 'Loading...',
+    score: 100,
+    vampiresDetected: 0,
+    potentialSavings: 0,
+    filesAudited: 0,
+    filesSkipped: 0,
+    languages: [],
+    rulesFired: []
   });
+
+  // Listen for messages from the VS Code extension
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const message = event.data;
+      if (message.type === 'updateReport') {
+        setReport(message.data);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Request initial data if running in VS Code
+    // @ts-ignore
+    if (window.acquireVsCodeApi) {
+       // @ts-ignore
+      const vscode = window.acquireVsCodeApi();
+      vscode.postMessage({ type: 'ready' });
+    }
+
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -63,7 +81,6 @@ function App() {
       </header>
 
       <main className="main-grid">
-        {/* Score and Core Stats */}
         <div className="span-small animate">
           <div className="glass-card score-container">
             <div className="score-gauge">
@@ -71,7 +88,7 @@ function App() {
             </div>
             <div className="score-label">Project Sustainability Score</div>
             <p style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Your project is "Highly Efficient". Fix 4 more vampires to reach Elite status.
+              {report.score > 90 ? 'Your project is Elite!' : report.score > 70 ? 'Your project is Highly Efficient.' : 'Your project needs optimization.'}
             </p>
           </div>
 
@@ -90,18 +107,25 @@ function App() {
                 <div className="stat-value green">{report.potentialSavings}g</div>
               </div>
             </div>
+            <div className="stat-row">
+              <div className="stat-item">
+                <div className="stat-label">Fleet Coverage</div>
+                <div className="stat-value" style={{ fontSize: '1rem' }}>
+                  <span className="green">{report.filesAudited} Audited</span> / <span className="red">{report.filesSkipped} Skipped</span>
+                </div>
+              </div>
+            </div>
             <div className="stat-row" style={{ marginBottom: 0 }}>
               <div className="stat-item">
                 <div className="stat-label">Languages</div>
                 <div className="stat-value" style={{ fontSize: '1rem' }}>
-                  {report.languages.join(', ')}
+                  {report.languages.join(', ') || 'Scanning...'}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Savings Chart */}
         <div className="span-large animate" style={{ animationDelay: '0.1s' }}>
           <div className="glass-card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -121,53 +145,24 @@ function App() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="var(--text-secondary)" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                  />
-                  <YAxis 
-                    stroke="var(--text-secondary)" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(val) => `${val}g`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'var(--bg-surface)', 
-                      border: '1px solid var(--glass-border)',
-                      borderRadius: '12px',
-                      color: '#fff'
-                    }} 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="savings" 
-                    stroke="var(--accent-green)" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorSavings)" 
-                  />
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}g`} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '12px', color: '#fff' }} />
+                  <Area type="monotone" dataKey="savings" stroke="var(--accent-green)" strokeWidth={3} fillOpacity={1} fill="url(#colorSavings)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Energy Vampire List */}
           <div className="glass-card" style={{ marginTop: '24px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={20} color="var(--vampire-red)" />
               Detected Energy Vampires
             </h3>
             <div className="vampire-list">
-              {report.rulesFired.map((vampire, index) => (
+              {report.rulesFired.length > 0 ? report.rulesFired.map((vampire: any, index: number) => (
                 <div className="vampire-item" key={index}>
-                  <div className="vampire-icon">
-                    <Zap size={18} />
-                  </div>
+                  <div className="vampire-icon"><Zap size={18} /></div>
                   <div className="vampire-info">
                     <div className="vampire-title">{vampire.description}</div>
                     <div className="vampire-desc">Detected {vampire.count} times in project code.</div>
@@ -175,7 +170,7 @@ function App() {
                   <div className="vampire-saving">-{vampire.saving}% Energy</div>
                   <ArrowUpRight size={16} color="var(--text-secondary)" style={{ cursor: 'pointer' }} />
                 </div>
-              ))}
+              )) : <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No Energy Vampires detected. Great job!</div>}
             </div>
           </div>
         </div>

@@ -12,7 +12,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onLanguage:java", "onLanguage:python", "onLanguage:javascript", "onLanguage:typescript",
+    "onLanguage:cpp", "onLanguage:csharp", "onLanguage:go", "onLanguage:rust",
+    "onLanguage:swift", "onLanguage:php", "onLanguage:sql", "onLanguage:kotlin",
+    "onLanguage:ruby", "onLanguage:c", "onLanguage:dart", "onLanguage:scala",
+    "onLanguage:shellscript", "onLanguage:perl", "onLanguage:lua", "onLanguage:julia",
+    "onLanguage:haskell", "onLanguage:matlab", "onLanguage:r", "onLanguage:elixir",
+    "onLanguage:solidity", "onLanguage:groovy"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -33,7 +40,7 @@
         {
           "command": "code-green.scan",
           "group": "navigation",
-          "when": "resourceLangId == java || resourceLangId == python || resourceLangId == cpp"
+          "when": "resourceLangId == java || resourceLangId == python || resourceLangId == javascript || resourceLangId == typescript || resourceLangId == cpp || resourceLangId == csharp || resourceLangId == go || resourceLangId == rust || resourceLangId == swift || resourceLangId == php || resourceLangId == sql || resourceLangId == kotlin || resourceLangId == ruby || resourceLangId == c || resourceLangId == dart || resourceLangId == scala || resourceLangId == shellscript || resourceLangId == perl || resourceLangId == lua || resourceLangId == julia || resourceLangId == haskell || resourceLangId == matlab || resourceLangId == r || resourceLangId == elixir || resourceLangId == solidity || resourceLangId == groovy"
         }
       ]
     },
@@ -49,9 +56,10 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build-all",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "build-all": "npm run compile && cd ../dashboard && npm install && npm run build"
   },
   "devDependencies": {
     "@types/vscode": "^1.75.0",

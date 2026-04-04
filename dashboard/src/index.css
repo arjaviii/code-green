@@ -165,6 +165,10 @@ header {
 .stat-value.green { color: var(--accent-green); }
 .stat-value.red { color: var(--vampire-red); }
 
+/* Utility Colors */
+.green { color: var(--accent-green); }
+.red { color: var(--vampire-red); }
+
 /* Vampire List */
 .vampire-list {
   list-style: none;

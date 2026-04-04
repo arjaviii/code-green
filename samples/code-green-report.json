@@ -1,0 +1,39 @@
+{
+  "projectName": "samples",
+  "lastUpdate": "2026-04-04T16:03:02.082Z",
+  "score": 92.8,
+  "vampiresDetected": 6,
+  "potentialSavings": 150,
+  "filesAudited": 5,
+  "filesSkipped": 1,
+  "languages": [
+    "javascript",
+    "java"
+  ],
+  "rulesFired": [
+    {
+      "id": "js-foreach-slow",
+      "description": "Array.forEach is slightly slower than a traditional for-loop.",
+      "count": 1,
+      "saving": 5
+    },
+    {
+      "id": "uni-nested-loop",
+      "description": "Deeply nested loop (O(n^3)+). High energy consumption.",
+      "count": 2,
+      "saving": 45
+    },
+    {
+      "id": "java-linked-list",
+      "description": "LinkedList detected. ArrayList is ~15% more efficient.",
+      "count": 2,
+      "saving": 15
+    },
+    {
+      "id": "java-string-concat",
+      "description": "String + in loop.",
+      "count": 1,
+      "saving": 25
+    }
+  ]
+}
