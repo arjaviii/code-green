@@ -1,0 +1,38 @@
+{
+  "projectName": "code-green-samples",
+  "lastUpdate": "2024-04-04T12:00:00Z",
+  "score": 88,
+  "vampiresDetected": 14,
+  "potentialSavings": 38,
+  "languages": [
+    "java",
+    "python",
+    "cpp"
+  ],
+  "rulesFired": [
+    {
+      "id": "java-linked-list",
+      "description": "LinkedList used instead of ArrayList",
+      "count": 3,
+      "saving": 15
+    },
+    {
+      "id": "python-append-loop",
+      "description": "Using .append() in a loop",
+      "count": 6,
+      "saving": 20
+    },
+    {
+      "id": "cpp-pass-by-value",
+      "description": "Large object passed by value",
+      "count": 2,
+      "saving": 12
+    },
+    {
+      "id": "python-redundant-api",
+      "description": "Frequent polling detected",
+      "count": 1,
+      "saving": 30
+    }
+  ]
+}

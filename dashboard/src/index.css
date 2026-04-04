@@ -1,0 +1,239 @@
+:root {
+  --font-main: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  
+  /* Color Palette: Eco-Futurism */
+  --bg-dark: #050b0a;
+  --bg-surface: #0a1412;
+  --bg-card: rgba(15, 25, 23, 0.7);
+  --accent-green: #00ff88;
+  --accent-green-glow: rgba(0, 255, 136, 0.2);
+  --accent-blue: #00d2ff;
+  --vampire-red: #ff3e3e;
+  --vampire-red-glow: rgba(255, 62, 62, 0.2);
+  --text-primary: #f0f7f4;
+  --text-secondary: #94a3a1;
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 40px rgba(0, 255, 136, 0.05);
+}
+
+/* Header Section */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px var(--accent-green-glow);
+}
+
+.brand h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #fff, var(--accent-green));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Main Grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.span-large { grid-column: span 8; }
+.span-small { grid-column: span 4; }
+
+/* Score Gauge Animation */
+.score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.score-gauge {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 8px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 16px;
+  background: radial-gradient(circle, var(--accent-green-glow) 0%, transparent 70%);
+}
+
+.score-value {
+  font-size: 3.5rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  color: var(--accent-green);
+  text-shadow: 0 0 15px var(--accent-green);
+}
+
+.score-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Stats Section */
+.stat-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.stat-item {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-value.green { color: var(--accent-green); }
+.stat-value.red { color: var(--vampire-red); }
+
+/* Vampire List */
+.vampire-list {
+  list-style: none;
+  margin-top: 24px;
+}
+
+.vampire-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.vampire-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--vampire-red-glow);
+}
+
+.vampire-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--vampire-red-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vampire-red);
+}
+
+.vampire-info {
+  flex: 1;
+}
+
+.vampire-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.vampire-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.vampire-saving {
+  background: var(--accent-green-glow);
+  color: var(--accent-green);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+@media (max-width: 900px) {
+  .span-large, .span-small {
+    grid-column: span 12;
+  }
+}
