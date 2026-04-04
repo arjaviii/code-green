@@ -1,39 +1,74 @@
 {
   "projectName": "samples",
-  "lastUpdate": "2026-04-04T16:03:02.082Z",
+  "lastUpdate": "2026-04-04T16:51:57.209Z",
   "score": 92.8,
   "vampiresDetected": 6,
-  "potentialSavings": 150,
-  "filesAudited": 5,
-  "filesSkipped": 1,
+  "carbonRecoveryPotential": 150,
+  "carbonAlreadyRecovered": 464,
+  "vampireInstances": [
+    {
+      "ruleId": "js-foreach-slow",
+      "description": "Array.forEach is slightly slower than a traditional for-loop.",
+      "saving": 5,
+      "category": "CPU",
+      "fileName": "polyglot_vampires.js",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\polyglot_vampires.js",
+      "line": 2,
+      "character": 4
+    },
+    {
+      "ruleId": "uni-nested-loop",
+      "description": "Deeply nested loop (O(n^3)+). High energy consumption.",
+      "saving": 45,
+      "category": "Algorithmic",
+      "fileName": "polyglot_vampires.js",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\polyglot_vampires.js",
+      "line": 2,
+      "character": 5
+    },
+    {
+      "ruleId": "java-linked-list",
+      "description": "LinkedList detected. ArrayList is ~15% more efficient.",
+      "saving": 15,
+      "category": "Memory",
+      "fileName": "java_vampires.java",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\java_vampires.java",
+      "line": 6,
+      "character": 28
+    },
+    {
+      "ruleId": "uni-nested-loop",
+      "description": "Deeply nested loop (O(n^3)+). High energy consumption.",
+      "saving": 45,
+      "category": "Algorithmic",
+      "fileName": "java_vampires.java",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\java_vampires.java",
+      "line": 5,
+      "character": 36
+    },
+    {
+      "ruleId": "java-linked-list",
+      "description": "LinkedList detected. ArrayList is ~15% more efficient.",
+      "saving": 15,
+      "category": "Memory",
+      "fileName": "aggressive_vampires.java",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\aggressive_vampires.java",
+      "line": 5,
+      "character": 49
+    },
+    {
+      "ruleId": "java-string-concat",
+      "description": "String + in loop.",
+      "saving": 25,
+      "category": "CPU",
+      "fileName": "aggressive_vampires.java",
+      "fullPath": "c:\\Users\\awtha\\Documents\\GitHub\\code-green\\samples\\aggressive_vampires.java",
+      "line": 9,
+      "character": 8
+    }
+  ],
   "languages": [
     "javascript",
     "java"
-  ],
-  "rulesFired": [
-    {
-      "id": "js-foreach-slow",
-      "description": "Array.forEach is slightly slower than a traditional for-loop.",
-      "count": 1,
-      "saving": 5
-    },
-    {
-      "id": "uni-nested-loop",
-      "description": "Deeply nested loop (O(n^3)+). High energy consumption.",
-      "count": 2,
-      "saving": 45
-    },
-    {
-      "id": "java-linked-list",
-      "description": "LinkedList detected. ArrayList is ~15% more efficient.",
-      "count": 2,
-      "saving": 15
-    },
-    {
-      "id": "java-string-concat",
-      "description": "String + in loop.",
-      "count": 1,
-      "saving": 25
-    }
   ]
 }

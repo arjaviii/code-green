@@ -4,18 +4,50 @@ exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
+const child_process_1 = require("child_process");
 const scanner_1 = require("./scanner");
 const rules_1 = require("./rules");
 let diagnosticCollection;
 let statusBarItem;
 let globalScore = 100;
 let currentPanel = undefined;
-let outputChannel;
+// --- Dynamic Audit Terminal (Pseudoterminal) ---
+class CodeGreenAuditor {
+    constructor() {
+        this.writeEmitter = new vscode.EventEmitter();
+        this.onDidWrite = this.writeEmitter.event;
+        this.closeEmitter = new vscode.EventEmitter();
+        this.onDidClose = this.closeEmitter.event;
+    }
+    open() {
+        this.log("\x1b[1;32m🌿 Code-Green Audit Console Initialized\x1b[0m\r\n");
+    }
+    close() { }
+    log(message, dynamic = false) {
+        const timestamp = new Date().toLocaleTimeString();
+        const prefix = `\x1b[90m[${timestamp}]\x1b[0m `;
+        if (dynamic) {
+            // \x1b[2K clears the current line, \r moves the cursor to the beginning
+            this.writeEmitter.fire(`\x1b[2K\r${prefix}${message}`);
+        }
+        else {
+            this.writeEmitter.fire(`${prefix}${message}\r\n`);
+        }
+    }
+    clear() {
+        this.writeEmitter.fire('\x1b[2J\x1b[3J\x1b[H');
+    }
+}
+const auditor = new CodeGreenAuditor();
+let auditTerminal;
+function getAuditorTerminal() {
+    if (!auditTerminal) {
+        auditTerminal = vscode.window.createTerminal({ name: 'Code-Green Audit Console', pty: auditor });
+    }
+    return auditTerminal;
+}
 async function activate(context) {
-    console.log('Code-Green is now active and auditing your workspace 🌿');
-    outputChannel = vscode.window.createOutputChannel('Code-Green Audit');
-    outputChannel.show(true);
-    logToOutput('Starting Code-Green Global Auditor (30+ Languages Supported)...');
+    console.log('Code-Green active 🌿');
     diagnosticCollection = vscode.languages.createDiagnosticCollection('code-green');
     context.subscriptions.push(diagnosticCollection);
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -23,17 +55,13 @@ async function activate(context) {
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
     await scanWorkspace();
-    vscode.workspace.onDidOpenTextDocument(doc => {
-        scanDocument(doc);
-    }, null, context.subscriptions);
-    vscode.workspace.onDidSaveTextDocument(doc => {
-        scanDocument(doc);
+    vscode.workspace.onDidOpenTextDocument(doc => scanDocument(doc), null, context.subscriptions);
+    vscode.workspace.onDidSaveTextDocument(() => {
         scanWorkspace();
     }, null, context.subscriptions);
     let scanCommand = vscode.commands.registerCommand('code-green.scan', () => {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
-            scanDocument(editor.document);
             scanWorkspace();
             vscode.window.showInformationMessage('Code-Green: Manual scan complete!');
         }
@@ -51,35 +79,88 @@ async function activate(context) {
             currentPanel.onDidDispose(() => {
                 currentPanel = undefined;
             }, null, context.subscriptions);
-            currentPanel.webview.onDidReceiveMessage(message => {
+            currentPanel.webview.onDidReceiveMessage(async (message) => {
                 if (message.type === 'ready') {
                     sendReportToWebview();
+                }
+                else if (message.type === 'openFile') {
+                    const { fullPath, line, character } = message.data;
+                    const uri = vscode.Uri.file(fullPath);
+                    const doc = await vscode.workspace.openTextDocument(uri);
+                    const editor = await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One, preview: false });
+                    const position = new vscode.Position(line, character);
+                    editor.selection = new vscode.Selection(position, position);
+                    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+                }
+                else if (message.type === 'requestHistory') {
+                    await streamHistoryAudit(message.limit);
                 }
             }, null, context.subscriptions);
         }
     });
     context.subscriptions.push(scanCommand, dashboardCommand);
+    getAuditorTerminal().show(true);
 }
 exports.activate = activate;
-function logToOutput(message) {
-    const timestamp = new Date().toLocaleTimeString();
-    outputChannel.appendLine(`[${timestamp}] ${message}`);
-}
 function getWebviewContent(webview, extensionUri) {
     const webviewPath = path.join(extensionUri.fsPath, 'webview');
     const indexHtmlPath = path.join(webviewPath, 'index.html');
     let html = fs.readFileSync(indexHtmlPath, 'utf-8');
     const scriptRegex = /src="\.\/assets\/([^"]+)"/g;
     const styleRegex = /href="\.\/assets\/([^"]+)"/g;
-    html = html.replace(scriptRegex, (match, src) => {
-        const uri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, 'assets', src)));
-        return `src="${uri}"`;
-    });
-    html = html.replace(styleRegex, (match, href) => {
-        const uri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, 'assets', href)));
-        return `href="${uri}"`;
-    });
+    html = html.replace(scriptRegex, (m, src) => `src="${webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, 'assets', src)))}"`);
+    html = html.replace(styleRegex, (m, href) => `href="${webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, 'assets', href)))}"`);
     return html;
+}
+function runGitCommand(cmd, cwd) {
+    return new Promise((resolve) => {
+        (0, child_process_1.exec)(`git ${cmd}`, { cwd }, (error, stdout) => {
+            if (error)
+                resolve('');
+            else
+                resolve(stdout.trim());
+        });
+    });
+}
+async function streamHistoryAudit(limit) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || !currentPanel)
+        return;
+    const rootPath = workspaceFolders[0].uri.fsPath;
+    auditor.log(`\x1b[1;36m🔄 Initiating Time-Range Audit (Limit: ${limit === -1 ? 'MAX' : limit})\x1b[0m`);
+    const gitLog = await runGitCommand(`log ${limit !== -1 ? `-n ${limit}` : ''} --pretty=format:"%H|%s"`, rootPath);
+    if (!gitLog) {
+        currentPanel.webview.postMessage({ type: 'historyComplete' });
+        return;
+    }
+    const commits = gitLog.split('\n').map(line => {
+        const [hash, msg] = line.split('|');
+        return { hash: hash.trim(), msg: msg.trim() };
+    });
+    const supportedExtensions = Object.keys(rules_1.EXTENSION_MAP);
+    for (let i = commits.length - 1; i >= 0; i--) {
+        const commit = commits[i];
+        auditor.log(`\x1b[33m⏳ Auditing Commit [${commit.hash.substring(0, 7)}]:\x1b[0m ${commit.msg.substring(0, 40)}`, true);
+        const fileList = await runGitCommand(`ls-tree -r --name-only ${commit.hash}`, rootPath);
+        let commitVampires = 0;
+        for (const filePath of fileList.split('\n')) {
+            const ext = path.extname(filePath).toLowerCase().replace('.', '');
+            if (supportedExtensions.includes(ext)) {
+                const content = await runGitCommand(`show ${commit.hash}:${filePath}`, rootPath);
+                if (content) {
+                    const langId = Object.keys(rules_1.EXTENSION_MAP).find(k => rules_1.EXTENSION_MAP[k] === ext) || "javascript";
+                    const diagnostics = (0, scanner_1.scanCode)(content, langId);
+                    commitVampires += diagnostics.length;
+                }
+            }
+        }
+        currentPanel.webview.postMessage({
+            type: 'historyPoint',
+            data: { timestamp: commit.hash.substring(0, 7), score: Math.max(0, 100 - (commitVampires * 1.2)), commit: commit.msg }
+        });
+    }
+    currentPanel.webview.postMessage({ type: 'historyComplete' });
+    auditor.log(`\x1b[1;32m✅ Historical Evolution Streamed Successfully\x1b[0m\n`);
 }
 async function scanWorkspace() {
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -87,94 +168,66 @@ async function scanWorkspace() {
         return;
     return vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: "Code-Green: Fleet Audit",
+        title: "Code-Green: Deep Analytics Audit",
         cancellable: false
     }, async (progress) => {
-        progress.report({ message: "Assembling the language fleet..." });
-        // 1. Get ALL files in workspace to calculate coverage
+        progress.report({ message: "Calibrating sensors..." });
+        const rootPath = workspaceFolders[0].uri.fsPath;
         const allFiles = await vscode.workspace.findFiles('**/*', '**/node_modules/**');
         const supportedExtensions = Object.keys(rules_1.EXTENSION_MAP);
         const auditTargetFiles = [];
-        const skippedFiles = [];
         allFiles.forEach(file => {
             const ext = path.extname(file.fsPath).toLowerCase().replace('.', '');
-            if (supportedExtensions.includes(ext)) {
+            if (supportedExtensions.includes(ext))
                 auditTargetFiles.push(file);
-            }
-            else if (ext) {
-                skippedFiles.push(file);
-            }
         });
-        const auditedFileList = auditTargetFiles.map(f => path.relative(workspaceFolders[0].uri.fsPath, f.fsPath));
-        const skippedFileList = skippedFiles.map(f => path.relative(workspaceFolders[0].uri.fsPath, f.fsPath));
+        auditor.log(`\x1b[1;36m🔎 Scanning Workspace Content (${auditTargetFiles.length} files)...\x1b[0m`);
         let totalVampires = 0;
         let totalPotentialSaving = 0;
+        const vampireInstances = [];
         const languagesFound = new Set();
-        logToOutput(`Global session started. Language Fleet Coverage:`);
-        logToOutput(`- Supported Files Found: ${auditTargetFiles.length}`);
-        logToOutput(`- Files Skipped (Unsupported): ${skippedFiles.length}`);
-        const report = {
-            projectName: workspaceFolders[0].name,
-            lastUpdate: new Date().toISOString(),
-            score: 100,
-            vampiresDetected: 0,
-            potentialSavings: 0,
-            filesAudited: auditTargetFiles.length,
-            filesSkipped: skippedFiles.length,
-            auditedFileList: auditedFileList,
-            skippedFileList: skippedFileList,
-            languages: [],
-            rulesFired: []
-        };
-        const increment = 100 / (auditTargetFiles.length || 1);
-        for (let i = 0; i < auditTargetFiles.length; i++) {
-            const file = auditTargetFiles[i];
-            const fileName = path.basename(file.fsPath);
-            progress.report({ message: `Scrutinizing ${fileName}...`, increment: increment });
+        for (const file of auditTargetFiles) {
+            const relPath = path.relative(rootPath, file.fsPath);
+            auditor.log(`Auditing: \x1b[90m${relPath}\x1b[0m`, true);
             const doc = await vscode.workspace.openTextDocument(file);
             const diagnostics = (0, scanner_1.scanCode)(doc.getText(), doc.languageId);
             diagnosticCollection.set(file, diagnostics);
-            if (diagnostics.length > 0) {
+            if (diagnostics.length > 0)
                 languagesFound.add(doc.languageId);
-                logToOutput(`- Scanned: ${fileName} [detected ${diagnostics.length} inefficiencies]`);
-            }
             diagnostics.forEach(d => {
                 const ruleId = d.code;
-                // Get rules for THIS language specifically, or universal fallback
                 const rulesForLang = [...(rules_1.LANGUAGE_RULES[doc.languageId] || []), ...rules_1.LANGUAGE_RULES["universal"]];
                 const rule = rulesForLang.find((r) => r.id === ruleId);
                 if (rule) {
                     totalVampires++;
                     totalPotentialSaving += rule.saving;
-                    const existingRule = report.rulesFired.find((rf) => rf.id === ruleId);
-                    if (existingRule)
-                        existingRule.count++;
-                    else
-                        report.rulesFired.push({ id: ruleId, description: rule.description, count: 1, saving: rule.saving });
+                    vampireInstances.push({
+                        ruleId: rule.id, description: rule.description, saving: rule.saving, category: rule.category,
+                        fileName: relPath, fullPath: file.fsPath, line: d.range.start.line, character: d.range.start.character
+                    });
                 }
             });
         }
         globalScore = Math.max(0, 100 - (totalVampires * 1.2));
-        report.score = globalScore;
-        report.vampiresDetected = totalVampires;
-        report.potentialSavings = totalPotentialSaving;
-        report.languages = Array.from(languagesFound);
+        const report = {
+            projectName: workspaceFolders[0].name, lastUpdate: new Date().toISOString(),
+            score: globalScore, vampiresDetected: totalVampires, carbonRecoveryPotential: totalPotentialSaving,
+            carbonAlreadyRecovered: Math.round(globalScore * 5), vampireInstances: vampireInstances, languages: Array.from(languagesFound)
+        };
         updateStatusBar(globalScore);
-        const reportPath = path.join(workspaceFolders[0].uri.fsPath, 'code-green-report.json');
-        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-        logToOutput(`Global Audit Complete. Fleet health: ${globalScore}%. Total issues identified: ${totalVampires}.`);
-        if (currentPanel) {
+        fs.writeFileSync(path.join(rootPath, 'code-green-report.json'), JSON.stringify(report, null, 2));
+        auditor.log(`\x1b[1;${totalVampires > 0 ? '31' : '32'}m⭐ Audit Complete: ${totalVampires} Vampires Found | Score: ${globalScore}%\x1b[0m\n`);
+        if (currentPanel)
             sendReportToWebview();
-        }
     });
 }
 function sendReportToWebview() {
     if (!currentPanel)
         return;
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders)
+    const rootPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath)
         return;
-    const reportPath = path.join(workspaceFolders[0].uri.fsPath, 'code-green-report.json');
+    const reportPath = path.join(rootPath, 'code-green-report.json');
     if (fs.existsSync(reportPath)) {
         const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
         currentPanel.webview.postMessage({ type: 'updateReport', data: report });
@@ -189,26 +242,17 @@ function scanDocument(doc) {
 }
 function updateStatusBar(score) {
     let icon = '$(leaf)';
-    let color = undefined;
-    if (score < 50) {
+    if (score < 50)
         icon = '$(zap)';
-        color = new vscode.ThemeColor('statusBarItem.errorBackground');
-    }
-    else if (score < 80) {
+    else if (score < 80)
         icon = '$(alert)';
-        color = new vscode.ThemeColor('statusBarItem.warningBackground');
-    }
     statusBarItem.text = `${icon} Code-Green: ${score}%`;
-    statusBarItem.tooltip = `Fleet Sustainability Score: ${score}% - Click to open dashboard`;
-    statusBarItem.backgroundColor = color;
 }
 function deactivate() {
     if (statusBarItem)
         statusBarItem.dispose();
     if (diagnosticCollection)
         diagnosticCollection.dispose();
-    if (outputChannel)
-        outputChannel.dispose();
 }
 exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map
