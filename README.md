@@ -7,13 +7,27 @@
 
 **Code-Green** is a professional-grade VS Code extension designed to bridge the gap between **Software Engineering** and **Environmental Sustainability**. In an era where data centers consume nearly 3% of global electricity, Code-Green empowers developers to visualize, audit, and eliminate "Carbon Leakage" directly from their IDE.
 
-### Core Functionalities:
-- **Evolutionary Auditing**: Traverse your project's Git history to visualize sustainability trends over time. 
-- **Real-Time Static Analysis**: Scans 30+ language-specific patterns for energy inefficiency.
-- **Cinematic Dashboard**: A high-end, React-powered analytics suite with glassmorphic UI.
-- **Jump-to-Code Navigation**: Instantly navigate from detected inefficiencies to the exact line in your source.
-- **Dynamic Audit Console**: A high-performance Pseudoterminal for real-time, streaming audit logs.
-- **Branded IDE Integration**: Dedicated Activity Bar leaf icon and Status Bar telemetry.
+### 🚀 Flagship Feature Catalog
+
+Through our iterative development, Code-Green has evolved from a basic scanner into a professional-grade observability platform. Here is the definitive list of innovations:
+
+- **1. Evolutionary Auditing (Git-History Integration)**: 
+    - **Stock-Market Range Selectors**: Analysis across **1C, 5C, 10C, or MAX** commits.
+    - **Streaming History Engine**: Real-time Git traversal that populates the dashboard commit-by-commit.
+    - **Generating Time Management**: Glassmorphic "Trend Generating" overlay with pulsing leaf animations for long-running deep audits.
+- **2. Cinematic Dashboard Architecture**:
+    - **Stagger-Draw Animation**: Sequential reveal system where the trend line draws left-to-right, followed by a **120ms staggered pop-in** of commit data points.
+    - **Modular Card Design**: Decoupled, glassmorphic layout for Sustainability Score, Project Impact, and Inefficiency Tracking.
+    - **Interactive Pro-Tooltips**: Monospace `COMMIT #hash` headers (0.7 opacity) with status-aware score metrics.
+    - **Intelligent Filtering & Pagination**: Sizable vampire lists with Category sorting (CPU, Memory, I/O, etc.) and footer pagination.
+- **3. High-Performance IDE Experience**:
+    - **Dynamic Audit Console (Pseudoterminal)**: A custom `vscode.Pseudoterminal` implementation providing **in-place line updates (`\r`)**. No log spam—just a clean, high-speed progress visual.
+    - **Jump-to-Code Navigation**: One-click arrow icons that open the target file, scroll to the line, and highlight the inefficiency.
+    - **Branded Activity Bar (Sidebar)**: Permanent **Leaf Icon** (synced with dashboard design) housing a live Sustainability Status Summary.
+- **4. The "Neo-Solar" Design System**:
+    - **Minimalist Iconography**: Hand-coded flat SVG icons tailored for theme-aware visibility.
+    - **Premium Typography**: Sophisticated hierarchy using **Outfit** for headings, **Inter** for UI, and **Fira Code** for monospace ligatures like `O(n^3)`.
+    - **Contextual Status Bar**: Real-time score heartbeat at the bottom of the editor.
 
 ---
 
