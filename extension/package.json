@@ -53,6 +53,30 @@
           "light": "#ff000044"
         }
       }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code-green-explorer",
+          "title": "Code-Green",
+          "icon": "resources/leaf.svg"
+        }
+      ]
+    },
+    "views": {
+      "code-green-explorer": [
+        {
+          "id": "code-green-status",
+          "name": "Sustainability Status",
+          "type": "tree"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "code-green-status",
+        "contents": "Welcome to Code-Green Sustainability Auditor.\n[Open Dashboard](command:code-green.openDashboard)\n[Run Global Audit](command:code-green.scan)"
+      }
     ]
   },
   "scripts": {

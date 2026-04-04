@@ -27,7 +27,6 @@ class CodeGreenAuditor {
         const timestamp = new Date().toLocaleTimeString();
         const prefix = `\x1b[90m[${timestamp}]\x1b[0m `;
         if (dynamic) {
-            // \x1b[2K clears the current line, \r moves the cursor to the beginning
             this.writeEmitter.fire(`\x1b[2K\r${prefix}${message}`);
         }
         else {
@@ -46,6 +45,49 @@ function getAuditorTerminal() {
     }
     return auditTerminal;
 }
+// --- Sidebar Summary Provider ---
+class SustainabilityItem extends vscode.TreeItem {
+    constructor(label, value, iconPath) {
+        super(label, vscode.TreeItemCollapsibleState.None);
+        this.label = label;
+        this.value = value;
+        this.iconPath = iconPath;
+        this.description = value;
+    }
+}
+class SustainabilitySummaryProvider {
+    constructor() {
+        this._onDidChangeTreeData = new vscode.EventEmitter();
+        this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+        this.data = [];
+        this.refresh();
+    }
+    refresh() {
+        const rootPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (rootPath) {
+            const reportPath = path.join(rootPath, 'code-green-report.json');
+            if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                this.data = [
+                    new SustainabilityItem("Sustainability Score", `${report.score}%`, new vscode.ThemeIcon('leaf')),
+                    new SustainabilityItem("Energy Vampires", `${report.vampiresDetected}`, new vscode.ThemeIcon('zap')),
+                    new SustainabilityItem("Carbon Recovery", `${report.carbonAlreadyRecovered}g`, new vscode.ThemeIcon('globe'))
+                ];
+            }
+            else {
+                this.data = [new SustainabilityItem("Status", "Audit Required", new vscode.ThemeIcon('info'))];
+            }
+        }
+        this._onDidChangeTreeData.fire();
+    }
+    getTreeItem(element) {
+        return element;
+    }
+    getChildren() {
+        return this.data;
+    }
+}
+const summaryProvider = new SustainabilitySummaryProvider();
 async function activate(context) {
     console.log('Code-Green active 🌿');
     diagnosticCollection = vscode.languages.createDiagnosticCollection('code-green');
@@ -54,17 +96,17 @@ async function activate(context) {
     statusBarItem.command = 'code-green.openDashboard';
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
+    // Register Sidebar View
+    const treeView = vscode.window.createTreeView('code-green-status', { treeDataProvider: summaryProvider });
+    context.subscriptions.push(treeView);
     await scanWorkspace();
     vscode.workspace.onDidOpenTextDocument(doc => scanDocument(doc), null, context.subscriptions);
     vscode.workspace.onDidSaveTextDocument(() => {
         scanWorkspace();
     }, null, context.subscriptions);
     let scanCommand = vscode.commands.registerCommand('code-green.scan', () => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor) {
-            scanWorkspace();
-            vscode.window.showInformationMessage('Code-Green: Manual scan complete!');
-        }
+        scanWorkspace();
+        vscode.window.showInformationMessage('Code-Green: Manual scan complete!');
     });
     let dashboardCommand = vscode.commands.registerCommand('code-green.openDashboard', () => {
         if (currentPanel) {
@@ -76,21 +118,18 @@ async function activate(context) {
                 localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'webview'))]
             });
             currentPanel.webview.html = getWebviewContent(currentPanel.webview, context.extensionUri);
-            currentPanel.onDidDispose(() => {
-                currentPanel = undefined;
-            }, null, context.subscriptions);
+            currentPanel.onDidDispose(() => { currentPanel = undefined; }, null, context.subscriptions);
             currentPanel.webview.onDidReceiveMessage(async (message) => {
                 if (message.type === 'ready') {
                     sendReportToWebview();
                 }
                 else if (message.type === 'openFile') {
                     const { fullPath, line, character } = message.data;
-                    const uri = vscode.Uri.file(fullPath);
-                    const doc = await vscode.workspace.openTextDocument(uri);
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(fullPath));
                     const editor = await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One, preview: false });
-                    const position = new vscode.Position(line, character);
-                    editor.selection = new vscode.Selection(position, position);
-                    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+                    const pos = new vscode.Position(line, character);
+                    editor.selection = new vscode.Selection(pos, pos);
+                    editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
                 }
                 else if (message.type === 'requestHistory') {
                     await streamHistoryAudit(message.limit);
@@ -187,8 +226,6 @@ async function scanWorkspace() {
         const vampireInstances = [];
         const languagesFound = new Set();
         for (const file of auditTargetFiles) {
-            const relPath = path.relative(rootPath, file.fsPath);
-            auditor.log(`Auditing: \x1b[90m${relPath}\x1b[0m`, true);
             const doc = await vscode.workspace.openTextDocument(file);
             const diagnostics = (0, scanner_1.scanCode)(doc.getText(), doc.languageId);
             diagnosticCollection.set(file, diagnostics);
@@ -203,7 +240,7 @@ async function scanWorkspace() {
                     totalPotentialSaving += rule.saving;
                     vampireInstances.push({
                         ruleId: rule.id, description: rule.description, saving: rule.saving, category: rule.category,
-                        fileName: relPath, fullPath: file.fsPath, line: d.range.start.line, character: d.range.start.character
+                        fileName: path.relative(rootPath, file.fsPath), fullPath: file.fsPath, line: d.range.start.line, character: d.range.start.character
                     });
                 }
             });
@@ -215,6 +252,7 @@ async function scanWorkspace() {
             carbonAlreadyRecovered: Math.round(globalScore * 5), vampireInstances: vampireInstances, languages: Array.from(languagesFound)
         };
         updateStatusBar(globalScore);
+        summaryProvider.refresh();
         fs.writeFileSync(path.join(rootPath, 'code-green-report.json'), JSON.stringify(report, null, 2));
         auditor.log(`\x1b[1;${totalVampires > 0 ? '31' : '32'}m⭐ Audit Complete: ${totalVampires} Vampires Found | Score: ${globalScore}%\x1b[0m\n`);
         if (currentPanel)
@@ -239,6 +277,7 @@ function scanDocument(doc) {
         return;
     const diagnostics = (0, scanner_1.scanCode)(doc.getText(), doc.languageId);
     diagnosticCollection.set(doc.uri, diagnostics);
+    summaryProvider.refresh();
 }
 function updateStatusBar(score) {
     let icon = '$(leaf)';
